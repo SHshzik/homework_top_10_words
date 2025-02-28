@@ -5,6 +5,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"sync"
 )
 
 type Entry struct {
@@ -51,6 +52,7 @@ func findTop(filename string) []Entry {
 }
 
 func main() {
+	var wg sync.WaitGroup
 	arguments := os.Args
 	if len(arguments) == 1 {
 		fmt.Println("Usage: go run main.go <command>")
@@ -58,7 +60,12 @@ func main() {
 	}
 	files := arguments[1:]
 	for _, file := range files {
-		result := findTop(file)
-		fmt.Println(result)
+		wg.Add(1)
+		go func(file string) {
+			result := findTop(file)
+			fmt.Println(file, result)
+			wg.Done()
+		}(file)
 	}
+	wg.Wait()
 }
