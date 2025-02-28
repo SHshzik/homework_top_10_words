@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"slices"
@@ -14,15 +15,22 @@ type Entry struct {
 }
 
 func findTop(filename string) []Entry {
-	var result = map[string]int{}
-	data, err := os.ReadFile(filename)
+	var result = make(map[string]int)
+	file, err := os.Open(filename)
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	}(file)
 	if err != nil {
 		fmt.Println(err.Error())
 		return []Entry{}
 	}
+	scanner := bufio.NewScanner(file)
 
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
+	for scanner.Scan() {
+		line := scanner.Text()
 		if line == "" {
 			continue
 		}
@@ -30,9 +38,6 @@ func findTop(filename string) []Entry {
 		for _, word := range words {
 			if word == "\r" {
 				continue
-			}
-			if _, ok := result[word]; !ok {
-				result[word] = 0
 			}
 			result[word] += 1
 		}
