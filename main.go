@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log/slog"
 	"os"
 	"slices"
 	"strings"
@@ -14,21 +15,20 @@ type Entry struct {
 	count int
 }
 
-func findTop(filename string) []Entry {
+func findTop(filename string) ([]Entry, error) {
 	var result = make(map[string]int)
 	file, err := os.Open(filename)
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
-			fmt.Println(err.Error())
+			slog.Error(err.Error())
 		}
 	}(file)
 	if err != nil {
-		fmt.Println(err.Error())
-		return []Entry{}
+		return nil, err
 	}
-	scanner := bufio.NewScanner(file)
 
+	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == "" {
@@ -53,21 +53,24 @@ func findTop(filename string) []Entry {
 	if m > 10 {
 		m = 10
 	}
-	return entries[:m]
+	return entries[:m], nil
 }
 
 func main() {
 	var wg sync.WaitGroup
 	arguments := os.Args
 	if len(arguments) == 1 {
-		fmt.Println("Usage: go run main.go <command>")
+		fmt.Println("Usage: go run main.go file1 file2 file3")
 		return
 	}
 	files := arguments[1:]
 	for _, file := range files {
 		wg.Add(1)
 		go func(file string) {
-			result := findTop(file)
+			result, err := findTop(file)
+			if err != nil {
+				slog.Error(err.Error())
+			}
 			fmt.Println(file, result)
 			wg.Done()
 		}(file)
